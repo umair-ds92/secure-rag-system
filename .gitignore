@@ -1,0 +1,76 @@
+# Secure RAG System - .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-log.txt
+
+# Virtual Environments
+venv/
+env/
+.venv
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+
+# Project Data
+data/chroma_db/
+data/uploads/
+data/processed/
+logs/
+*.db
+*.sqlite
+
+# Docker
+docker-volumes/
+
+# AWS & Cloud
+.terraform/
+*.tfstate
+*.tfstate.*
+.aws/
+
+# ML Models & Cache
+models/
+*.pt
+*.pth
+*.pkl
+embeddings_cache/
+
+# Misc
+*.bak
+tmp/
+temp/
+.cache/

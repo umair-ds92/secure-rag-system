@@ -1,0 +1,15 @@
+Ransomware Attack Vector Analysis
+
+Ransomware continues to be one of the most significant cybersecurity threats facing organizations today. This report analyzes the primary attack vectors used by ransomware operators.
+
+Phishing Emails:
+Phishing remains the most common initial access vector for ransomware attacks. Attackers send sophisticated emails containing malicious attachments or links. These emails often impersonate trusted entities or leverage social engineering tactics to trick users into clicking.
+
+Remote Desktop Protocol (RDP) Exploitation:
+Poorly secured RDP endpoints provide easy access for ransomware operators. Weak passwords, lack of multi-factor authentication, and exposed RDP ports to the internet create significant vulnerabilities.
+
+Software Vulnerabilities:
+Unpatched software and systems present opportunities for ransomware deployment. Attackers actively scan for known vulnerabilities and exploit them to gain initial access.
+
+Supply Chain Attacks:
+Compromising trusted software vendors or service providers allows attackers to distribute ransomware through legitimate update mechanisms.
