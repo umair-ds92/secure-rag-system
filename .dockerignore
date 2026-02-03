@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# .dockerignore
+# ---------------------------------------------------------------------------
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual env variants
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & runtime data
+logs/
+*.log
+*.jsonl
+
+# ChromaDB persisted data (lives in the named volume)
+data/chroma_db/
+
+# Docker itself
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Tests  –  not needed at runtime
+tests/
+
+# Docs / CI  –  not needed inside the container
+README.md
+testing.md
+.github/

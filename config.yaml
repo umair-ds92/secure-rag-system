@@ -49,6 +49,28 @@ generation:
     If the context doesn't contain enough information, say so clearly.
     Do not make up information or speculate beyond what's in the context.
 
+  # Hallucination guard (rag_pipeline.py)
+  faithfulness_threshold: 0.70          # scores below this → retry or fallback
+  max_retries: 2                        # re-prompt attempts before returning fallback
+  max_context_chars: 6000               # hard cap on context fed into the prompt
+  audit_log_path: "./logs/audit.jsonl"  # JSONL; one record per request
+
+# Evaluation Configuration
+evaluation:
+  model_name: "all-MiniLM-L6-v2"       # sentence-transformer used by faithfulness scorer
+
+  # Per-claim grounding thresholds
+  claim_semantic_threshold: 0.55        # cosine sim floor to count a claim as supported
+  claim_lexical_threshold: 0.35         # token-overlap fallback floor
+
+  # Scoring signal weights (must sum to 1.0)
+  weights:
+    semantic: 0.40                      # best-chunk cosine similarity
+    coverage: 0.40                      # fraction of claims grounded
+    numeric:  0.20                      # fraction of response numbers found in context
+
+  hedge_max_penalty: 0.10               # max subtracted when hedging + weak evidence
+
 # Security Configuration
 security:
   enable_input_sanitization: true
@@ -62,6 +84,21 @@ security:
     - "admin mode"
     - "bypass security"
 
+  # PII types scrubbed before ingestion (input_sanitizer.py)
+  pii_patterns:
+    - "email"
+    - "phone"
+    - "ssn"
+    - "sin"
+    - "credit_card"
+
+  # RBAC clearance levels, lowest → highest (access_control.py)
+  clearance_levels:
+    - "public"
+    - "internal"
+    - "confidential"
+    - "restricted"
+
 # Logging Configuration
 logging:
   level: "INFO"
@@ -69,6 +106,7 @@ logging:
   file: "./logs/secure_rag.log"
   max_bytes: 10485760  # 10MB
   backup_count: 5
+  json_logging: true                    # structured JSON output via python-json-logger
 
 # Performance Configuration
 performance:
@@ -76,3 +114,21 @@ performance:
   cache_enabled: true
   cache_ttl: 3600  # 1 hour
   timeout_seconds: 30
+
+# Docker Configuration
+docker:
+  # ChromaDB container
+  chromadb:
+    image: "chromadb/chroma:0.4.22"
+    host: "chromadb"                    # service name on the docker-compose network
+    port: 8000
+    persist_directory: "/chroma/chroma"
+    cpu_limit: "1.0"
+    memory_limit: "2G"
+
+  # RAG app container
+  app:
+    host_port: 8000
+    container_port: 8000
+    cpu_limit: "2.0"
+    memory_limit: "4G"

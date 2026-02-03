@@ -1,0 +1,137 @@
+# ===========================================================================
+# docker-compose.yml  —  secure-rag-system
+# ===========================================================================
+# Services
+#   chromadb   –  ChromaDB vector store (persistent volume)
+#   rag-app    –  application container  (depends on chromadb)
+#
+# Usage
+#   docker compose up --build -d          # start everything
+#   docker compose logs -f rag-app        # tail app logs
+#   docker compose down -v                # tear down + remove volumes
+# ===========================================================================
+
+# version: "3.8"
+
+# ---------------------------------------------------------------------------
+# Shared network  –  internal DNS only; nothing exposed except rag-app:8000
+# ---------------------------------------------------------------------------
+networks:
+  rag-internal:
+    driver: bridge
+
+# ---------------------------------------------------------------------------
+# Persistent storage  –  ChromaDB data survives container restarts
+# ---------------------------------------------------------------------------
+volumes:
+  chroma-data:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+services:
+  # -----------------------------------------------------------------------
+  # 1.  ChromaDB
+  # -----------------------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:0.4.22
+    container_name: secure-rag-chromadb
+
+    # Expose the gRPC / HTTP port ONLY on the internal network.
+    # Do NOT publish it to the host unless you need direct CLI access.
+    expose:
+      - "8000"
+
+    # Persist data to a named volume so collections survive restarts
+    volumes:
+      - chroma-data:/chroma/chroma
+
+    environment:
+      # Tell ChromaDB to use the named volume as its persistence directory
+      - CHROMA_PERSIST_DIRECTORY=/chroma/chroma
+      # Allow connections from the rag-app container
+      - CHROMA_SERVER_CORS_ALLOW_ORIGINS=["*"]
+
+    networks:
+      - rag-internal
+
+    # Health-check: ChromaDB exposes /api/v1/heartbeat
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    # Resource guardrails
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+
+    restart: unless-stopped
+
+  # -----------------------------------------------------------------------
+  # 2.  RAG Application
+  # -----------------------------------------------------------------------
+  rag-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secure-rag-app
+
+    # Expose to the host so you can curl / call from outside Docker
+    ports:
+      - "8000:8000"
+
+    # Mount local src so changes are reflected without rebuild (dev mode).
+    # Remove this volume in production / CI to use the baked-in image layer.
+    volumes:
+      - ./src:/app/src                    # live code
+      - ./config.yaml:/app/config.yaml    # live config
+      - ./logs:/app/logs                  # host-accessible log output
+      - ./data/sample_docs:/app/data/sample_docs  # sample docs for ingestion
+
+    environment:
+      # ---- ChromaDB connection (points to the sibling container) ----
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: "8000"
+
+      # ---- Faithfulness / hallucination thresholds ----
+      FAITHFULNESS_THRESHOLD: "0.70"
+      MAX_RETRIES: "2"
+
+      # ---- Audit log location (inside the container) ----
+      AUDIT_LOG_PATH: /app/logs/audit.jsonl
+
+      # ---- Python path so ``from generation.rag_pipeline …`` works ----
+      PYTHONPATH: /app/src
+
+      # ---- Logging ----
+      LOG_LEVEL: INFO
+
+    depends_on:
+      chromadb:
+        condition: service_healthy   # wait until ChromaDB heartbeat passes
+
+    networks:
+      - rag-internal
+
+    # Health-check (mirrors the one in the Dockerfile)
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    # Resource guardrails  –  adjust for your host
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
+
+    restart: unless-stopped

@@ -65,7 +65,7 @@ Enterprise-grade Retrieval-Augmented Generation (RAG) system with comprehensive 
 # Clone and setup
 git clone https://github.com/yourusername/secure-rag-system.git
 cd secure-rag-system
-python -m venv venv && source venv/bin/activate
+python -m venv venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 # Configure
