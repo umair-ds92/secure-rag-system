@@ -1,0 +1,1 @@
+"""API module — FastAPI application and request/response models."""

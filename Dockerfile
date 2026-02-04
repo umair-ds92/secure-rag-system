@@ -55,15 +55,16 @@ COPY scripts/       /app/scripts/
 RUN mkdir -p /app/logs /app/data/chroma_db /app/monitoring \
     && chown -R raguser:raguser /app
 
-# Switch to non-root
-USER raguser
-
 # Activate venv via PATH (no need to source it in every RUN)
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # Pre-download the sentence-transformer model into the image so the first
-# request doesn't stall.  Falls back silently if network is unavailable.
-RUN python -c "from sentence_transformers import SentenceTransformer SentenceTransformer('all-MiniLM-L6-v2')" 2>/dev/null || true
+# request doesn't stall.  Runs as root so it can write to the model cache.
+# Falls back silently if network is unavailable at build time.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" 2>/dev/null || true
+
+# Switch to non-root
+USER raguser
 
 # ---------------------------------------------------------------------------
 # Health-check  –  used by docker-compose & ECS health probes
@@ -76,6 +77,5 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=15s \
 # ---------------------------------------------------------------------------
 EXPOSE 8000
 
-# Default command — will be overridden in docker-compose for Commit 4 (FastAPI)
-# For now a simple smoke-test that proves the container starts and imports work.
-CMD ["python", "-c", "from generation.rag_pipeline import RAGPipeline; print('RAG pipeline import OK')"]
+# Default command — uvicorn FastAPI server on port 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
