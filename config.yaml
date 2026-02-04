@@ -119,7 +119,7 @@ performance:
 docker:
   # ChromaDB container
   chromadb:
-    image: "chromadb/chroma:0.4.22"
+    image: "chromadb/chroma:0.5.0"
     host: "chromadb"                    # service name on the docker-compose network
     port: 8000
     persist_directory: "/chroma/chroma"

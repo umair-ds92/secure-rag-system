@@ -35,7 +35,7 @@ services:
   # 1.  ChromaDB
   # -----------------------------------------------------------------------
   chromadb:
-    image: chromadb/chroma:0.4.22
+    image: chromadb/chroma:0.5.0
     container_name: secure-rag-chromadb
 
     # Expose the gRPC / HTTP port ONLY on the internal network.
