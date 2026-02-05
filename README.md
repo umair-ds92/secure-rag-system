@@ -3,211 +3,183 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
 [![AWS](https://img.shields.io/badge/AWS-deployable-orange.svg)](https://aws.amazon.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![FastAPI](https://img.shields.io/badge/FastAPI-production-success.svg)](https://fastapi.tiangolo.com/)
 
-Enterprise-grade Retrieval-Augmented Generation (RAG) system with comprehensive security controls for sensitive document querying. Designed for cybersecurity intelligence, legal documents, healthcare records, and financial analysis.
+Production-grade Retrieval-Augmented Generation (RAG) system with multi-layer security, hallucination mitigation, and one-command AWS deployment.
 
-## Key Features
+## Features
 
-- **Multi-layer Security**: PII removal, prompt injection detection, RBAC with clearance levels
-- **Hallucination Prevention**: Citation-forcing prompts, confidence scoring, LLM-as-judge evaluation
-- **Production-Ready**: Docker containerization, AWS deployment, auto-scaling, monitoring
-- **High Performance**: 94% retrieval precision, 97% adversarial blocking, <1.2s P95 latency
-- **Enterprise Features**: Audit logging, HIPAA/SOC2 ready, multi-tenancy support
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                      User Interface                          │
-│                   (API / Web / CLI)                          │
-└────────────────────────┬─────────────────────────────────────┘
-                         │
-                         ▼
-┌──────────────────────────────────────────────────────────────┐
-│                   FastAPI REST API                           │
-│          (Authentication, Rate Limiting, CORS)               │
-└────────────────────────┬─────────────────────────────────────┘
-                         │
-                         ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  Security Layer                              │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────────┐          │
-│  │  Input   │  │ Prompt   │  │  Access Control    │          │
-│  │Sanitizer │→ │  Guard   │→ │  (RBAC/Clearance)  │          │
-│  │(PII Scan)│  │(Injection│  │  (Audit Logging)   │          │
-│  └──────────┘  │Detection)│  └────────────────────┘          │
-│                └──────────┘                                  │
-└────────────────────────┬─────────────────────────────────────┘
-                         │
-                         ▼
-┌──────────────────────────────────────────────────────────────┐
-│                 RAG Pipeline Core                            │
-│  1. Query Embedding → 2. Vector Search (ChromaDB)            │
-│  3. Context Building → 4. LLM Generation (GPT-4)             │
-│  5. Confidence Scoring → 6. Response Validation              │
-└────────────────────────┬─────────────────────────────────────┘
-                         │
-         ┌───────────────┴──────────────┐
-         ▼                              ▼
-┌─────────────────┐          ┌─────────────────────┐
-│   ChromaDB      │          │  CloudWatch/        │
-│ Vector Storage  │          │  Prometheus         │
-│ (Embeddings)    │          │  (Monitoring)       │
-└─────────────────┘          └─────────────────────┘
-```
+- 🔒 **Security**: PII removal, prompt injection detection (97% block rate), RBAC with clearance levels
+- 🎯 **Faithfulness**: Multi-signal scoring (semantic + lexical + numeric consistency), retry loop, audit logging
+- 🚀 **Production-Ready**: FastAPI REST API, Docker containers, ECS Fargate auto-scaling, Prometheus metrics
+- 📊 **Performance**: 92% faithfulness score, <1.2s P95 latency, auto-scaling 1-10 tasks
 
 ## Quick Start
 
-### Local Setup
+### Local Development
 
 ```bash
-# Clone and setup
-git clone https://github.com/yourusername/secure-rag-system.git
+git clone https://github.com/umair-ds92/secure-rag-system.git
 cd secure-rag-system
-python -m venv venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Configure
-cp .env.example .env
-# Add OPENAI_API_KEY to .env
+# Set OpenAI API key
+export OPENAI_API_KEY=sk-...
 
 # Ingest documents
 python -m src.ingestion.ingest_docs data/sample_docs
 
-# Run API server
+# Run API
 uvicorn src.api.main:app --reload --port 8000
 ```
 
-### Docker Deployment
+### Docker
 
 ```bash
-docker-compose up -d
+docker compose up -d
 curl http://localhost:8000/health
+curl -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is Python?"}'
 ```
 
 ### AWS Deployment
 
 ```bash
-cd deployment/aws
-chmod +x deploy.sh
-./deploy.sh production us-east-1
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh production sk-YOUR_OPENAI_API_KEY
 ```
 
-See [AWS Deployment Guide](deployment/aws/AWS_DEPLOYMENT_GUIDE.md) for details.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full guide.
 
-## Performance Metrics
+## Architecture
 
-| Metric | Value | Description |
-|--------|-------|-------------|
-| Retrieval Precision | 94% | Document retrieval accuracy |
-| Answer Faithfulness | 92% | Accuracy to source material |
-| Adversarial Block Rate | 97% | Malicious prompt detection |
-| Hallucination Rate | <3% | False information generation |
-| P95 Latency | 1.2s | Response time (95th percentile) |
-| Throughput | 50 QPS | Queries per second capacity |
-
-## Configuration
-
-Key settings in `config.yaml`:
-
-```yaml
-vector_store:
-  chunk_size: 512
-  chunk_overlap: 50
-  
-generation:
-  model: "gpt-4"
-  temperature: 0.1
-  
-security:
-  enable_pii_detection: true
-  enable_prompt_injection_detection: true
-  strictness: "medium"  # low, medium, high
+```
+┌─────────────────────────────────────────────────────────┐
+│                    FastAPI REST API                     │
+│         /query  /health  /metrics  /docs                │
+└────────────────────┬────────────────────────────────────┘
+                     │
+         ┌───────────┴──────────┐
+         ▼                      ▼
+┌─────────────────┐    ┌──────────────────┐
+│  Security Layer │    │  RAG Pipeline    │
+│  • Sanitizer    │───>│  • Retrieval     │
+│  • Prompt Guard │    │  • Generation    │
+│  • RBAC         │    │  • Faithfulness  │
+└─────────────────┘    └────────┬─────────┘
+                                │
+                    ┌───────────┴──────────┐
+                    ▼                      ▼
+            ┌──────────────┐      ┌──────────────┐
+            │   ChromaDB   │      │  CloudWatch  │
+            │ Vector Store │      │  Monitoring  │
+            └──────────────┘      └──────────────┘
 ```
 
-## API Usage
+
+## API Endpoints
+
+| Endpoint      | Method | Description                          |
+|---------------|--------|--------------------------------------|
+| `/query`      | POST   | RAG question answering               |
+| `/health`     | GET    | Health check (Docker/ECS probes)     |
+| `/metrics`    | GET    | Prometheus metrics                   |
+| `/docs`       | GET    | Interactive API documentation        |
+
+**Example Query:**
 
 ```bash
-# Query endpoint
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "What are common ransomware attack vectors?",
-    "k": 5
+    "query": "Explain machine learning",
+    "top_k": 5,
+    "clearance_level": "public"
   }'
+```
 
-# Response format
+**Response:**
+
+```json
 {
-  "answer": "Common attack vectors include phishing [1], RDP exploitation [2]...",
-  "sources": [...],
-  "confidence": 0.87,
-  "safety_checks": {"prompt_guard": true, "sanitization": true}
+  "request_id": "550e8400-...",
+  "query": "Explain machine learning",
+  "answer": "Machine learning is...",
+  "faithfulness_score": 0.92,
+  "passed_faithfulness": true,
+  "chunks_used": [...],
+  "latency_ms": 234.56
 }
 ```
 
-## Testing
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ -v --cov=src --cov-report=html
-
-# Security tests only
-pytest tests/test_security.py -v
-```
+See [docs/API.md](docs/API.md) for full reference.
 
 ## Project Structure
 
 ```
 secure-rag-system/
 ├── src/
-│   ├── ingestion/       # Document processing
-│   ├── retrieval/       # Vector search
-│   ├── generation/      # RAG pipeline
-│   ├── security/        # Security controls
-│   ├── evaluation/      # Quality metrics
-│   └── api/            # REST API
-├── tests/              # Test suite
-├── deployment/
-│   └── aws/           # AWS infrastructure
-├── data/              # Documents & vector DB
-├── Dockerfile
-├── docker-compose.yml
-└── config.yaml
+│   ├── api/              # FastAPI application
+│   ├── ingestion/        # Document processing
+│   ├── retrieval/        # ChromaDB vector store
+│   ├── generation/       # RAG pipeline + faithfulness
+│   ├── security/         # Sanitizer, prompt guard, RBAC
+│   └── evaluation/       # Metrics (precision, recall, F1)
+├── tests/                # Pytest suite
+├── docs/                 # API + deployment guides
+├── scripts/              # deploy.sh (one-command AWS)
+├── cloudformation.yaml   # ECS Fargate infrastructure
+├── docker-compose.yml    # Local Docker stack
+├── Dockerfile            # Multi-stage production image
+└── config.yaml           # Configuration
 ```
 
-## 🔒 Security Features
+## Configuration
 
-1. **Input Sanitization**: PII removal (emails, phones, SSN, credit cards)
-2. **Prompt Guard**: Blocks 20+ injection patterns (97% success rate)
-3. **Access Control**: RBAC with 5 clearance levels (PUBLIC to TOP_SECRET)
-4. **Audit Logging**: Complete compliance trail for all operations
-5. **Citation-Forcing**: Prevents hallucinations through source attribution
-6. **Confidence Scoring**: Flags low-confidence responses for human review
+Key settings in `config.yaml`:
 
-## Deployment Options
+```yaml
+generation:
+  faithfulness_threshold: 0.70  # Retry if score below this
+  max_retries: 2                # Re-prompt attempts
+  
+security:
+  enable_pii_detection: true
+  enable_prompt_injection_detection: true
+  clearance_levels: [public, internal, confidential, restricted]
+  
+docker:
+  chromadb:
+    image: chromadb/chroma:0.5.0
+  app:
+    cpu_limit: "2.0"
+    memory_limit: "4G"
+```
 
-### Local Development
-- Quick setup with Python virtual environment
-- Uses local ChromaDB storage
-- Suitable for testing and development
+## Testing
 
-### Docker
-- Containerized deployment with docker-compose
-- Includes health checks and auto-restart
-- Suitable for single-server production
+```bash
+# All tests
+pytest tests/ -v
 
-### AWS (Production)
-- ECS Fargate with auto-scaling (2-10 tasks)
-- Application Load Balancer with multi-AZ
-- EFS for persistent vector storage
-- CloudWatch monitoring and alarms
-- Estimated cost: ~$164/month
+# Specific suites
+pytest tests/test_api.py -v           # FastAPI endpoints
+pytest tests/test_rag_pipeline.py -v  # RAG + faithfulness
+pytest tests/test_security.py -v      # Security layer
 
-See [deployment/aws/](deployment/aws/) for infrastructure details.
+# With coverage
+pytest tests/ -v --cov=src --cov-report=html
+```
+
+## Security Features
+
+1. **Input Sanitization**: Removes PII (emails, phones, SSN, credit cards)
+2. **Prompt Injection Guard**: Blocks 20+ malicious patterns (97% success rate)
+3. **Access Control**: RBAC with 4 clearance levels
+4. **Audit Logging**: Every request logged to JSONL (`logs/audit.jsonl`)
+5. **Faithfulness Scoring**: 3-signal grounding (semantic + lexical + numeric)
 
 ## Monitoring
 
@@ -215,15 +187,38 @@ See [deployment/aws/](deployment/aws/) for infrastructure details.
 # Health check
 curl http://localhost:8000/health
 
-# System stats
-curl http://localhost:8000/stats
-
 # Prometheus metrics
 curl http://localhost:8000/metrics
 
-# View logs (Docker)
-docker-compose logs -f
+# Docker logs
+docker compose logs -f rag-app
 
-# View logs (AWS)
-aws logs tail /ecs/production-secure-rag --follow
+# AWS logs
+aws logs tail /ecs/production-rag --follow
 ```
+
+## Performance Metrics
+
+| Metric                  | Value  |
+|-------------------------|--------|
+| Faithfulness Score      | 92%    |
+| Prompt Injection Block  | 97%    |
+| P95 Latency             | 1.2s   |
+| Auto-scaling Range      | 1-10   |
+
+## Development Roadmap
+
+- [x] Core RAG pipeline with ChromaDB
+- [x] Security layer (sanitizer, prompt guard, RBAC)
+- [x] Faithfulness scoring with retry loop
+- [x] FastAPI REST API with Prometheus metrics
+- [x] Docker containerization
+- [x] AWS ECS Fargate deployment
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+Built using FastAPI, ChromaDB, and sentence-transformers.
